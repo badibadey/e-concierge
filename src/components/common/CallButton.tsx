@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TelnyxRTC } from '@telnyx/webrtc';
 import { Button, Modal, Spin } from 'antd';
 import { PhoneOutlined } from '@ant-design/icons';
 import logoImage from '../../assets/images/e-concierge-logo.png';
+import ringtoneSound from '../../assets/images/ringtone.mp3';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL!;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY!;
 const TELNYX_CREDENTIAL_ID = import.meta.env.VITE_TELNYX_CREDENTIAL_ID!;
-const TELNYX_APP_PORT = import.meta.env.VITE_TELNYX_APP_PORT || '5432';
+// Usuwam nieużywaną zmienną TELNYX_APP_PORT
 
 // Funkcja do pobierania tokenu bezpośrednio z API Telnyx zamiast przez Supabase
 const fetchTelnyxTokenDirect = async (): Promise<string> => {
@@ -141,6 +142,7 @@ const CallButton = () => {
   const MAX_RETRIES = 3;
   const CONNECTION_TIMEOUT = 15000; // Reduced to 15 seconds for faster feedback
   const RETRY_DELAY = 2000;
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
   const waitForClientConnection = (telnyxClient: TelnyxRTC): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -303,10 +305,22 @@ const CallButton = () => {
               setIsCallActive(true);
               setIsConnecting(false);
               setError(null);
+              
+              // Zatrzymaj dzwonek, gdy połączenie zostało nawiązane
+              if (ringtoneRef.current) {
+                ringtoneRef.current.pause();
+                ringtoneRef.current.currentTime = 0;
+              }
             } else if (call.state === 'hangup' || call.state === 'destroy') {
               setIsCallActive(false);
               setIsConnecting(false);
               setError(null);
+              
+              // Zatrzymaj dzwonek, jeśli jest odtwarzany
+              if (ringtoneRef.current) {
+                ringtoneRef.current.pause();
+                ringtoneRef.current.currentTime = 0;
+              }
             }
           }
           
@@ -437,34 +451,75 @@ const CallButton = () => {
     };
   }, [initializeTelnyx]);
 
-  const handleCall = async () => {
-    if (!client || !isClientReady) {
-      setError('Service is not ready. Please wait a moment and try again.');
-      return;
-    }
+  useEffect(() => {
+    // Cleanup on component unmount
+    return () => {
+      if (call) {
+        try {
+          call.hangup();
+        } catch (e) {
+          console.error('Error during hangup:', e);
+        }
+      }
+      if (client) {
+        try {
+          client.disconnect();
+        } catch (e) {
+          console.error('Error during disconnect:', e);
+        }
+      }
+      // Zatrzymaj dzwonek, jeśli jest odtwarzany
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+    };
+  }, [call, client]);
 
-    if (isCallActive && call?.hangup) {
-      call.hangup();
-      setCall(null);
-      setIsCallActive(false);
+  const handleCall = async () => {
+    if (isCallActive) {
+      // Jeśli połączenie jest aktywne, rozłącz
+      if (call) {
+        try {
+          await call.hangup();
+          setIsCallActive(false);
+          setCall(null);
+          
+          // Zatrzymaj dzwonek, jeśli jest odtwarzany
+          if (ringtoneRef.current) {
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+          }
+        } catch (error) {
+          console.error('Error hanging up call:', error);
+        }
+      }
       return;
     }
 
     setIsConnecting(true);
     setError(null);
+    
+    // Odtwórz dzwonek podczas łączenia
+    if (ringtoneRef.current) {
+      ringtoneRef.current.currentTime = 0;
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch(e => console.error('Error playing ringtone:', e));
+    }
 
     try {
       // Verify client connection before proceeding
-      if (!client.connected) {
-        console.log('Client not connected, waiting for connection...');
-        try {
-          await waitForClientConnection(client);
-        } catch (e) {
-          console.error('Connection failed during call attempt:', e);
-          throw new Error('Connection failed. Please try again.');
-        }
+      if (!client) {
+        throw new Error('Client not initialized');
       }
+      
+      await waitForClientConnection(client as TelnyxRTC);
+    } catch (e) {
+      console.error('Connection failed during call attempt:', e);
+      throw new Error('Connection failed. Please try again.');
+    }
 
+    try {
       // Użyj konfiguracji połączenia zgodnej z dokumentacją Telnyx
       console.log('Initiating call...');
       
@@ -574,6 +629,7 @@ const CallButton = () => {
       
       {errorDisplay}
       <audio id="remoteAudio" />
+      <audio ref={ringtoneRef} src={ringtoneSound} preload="auto" />
       
       {/* Okno z animacją podczas dzwonienia */}
       <Modal
