@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="636" height="200" viewBox="0 0 636 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Blue bell icon -->
+  <rect x="0" y="0" width="200" height="200" rx="40" fill="#0091FF"/>
+  <path d="M100 40 C 80 40, 60 60, 60 100 C 60 140, 80 160, 100 160 C 120 160, 140 140, 140 100 C 140 60, 120 40, 100 40 Z" stroke="white" stroke-width="12" fill="none"/>
+  <path d="M70 70 L 130 130" stroke="white" stroke-width="12" fill="none"/>
+  <circle cx="100" cy="40" r="8" fill="white"/>
+  <circle cx="100" cy="160" r="8" fill="white"/>
+  <path d="M70 100 L 130 100" stroke="white" stroke-width="12" fill="none"/>
+  
+  <!-- e-consigier text -->
+  <path d="M356 120 Q 356 80, 416 80 Q 476 80, 476 120 Q 476 160, 416 160 Q 356 160, 356 120 Z" fill="none" stroke="#000" stroke-width="0"/>
+  <text x="220" y="120" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#000">e-consigier</text>
+</svg>
