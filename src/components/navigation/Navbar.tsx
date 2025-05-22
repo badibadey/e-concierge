@@ -2,6 +2,7 @@ import { Bell, MessageSquare, Menu, User } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logoImage from '../../assets/images/e-concierge-logo.png';
 
 type NavbarProps = {
   onMenuClick: () => void;
@@ -37,7 +38,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
             </button>
             <Link to="/dashboard" className="flex items-center">
               <div className="flex items-center">
-                <img src="/src/assets/images/e-concierge-logo.png" alt="e-concierge logo" className="h-12 mr-2" />
+                <img src={logoImage} alt="e-concierge logo" className="h-12 mr-2" />
               </div>
             </Link>
           </div>
